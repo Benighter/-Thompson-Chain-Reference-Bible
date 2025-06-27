@@ -65,15 +65,38 @@ class ThompsonChainBible {
             });
         });
 
-        // Search functionality
+        // Enhanced search functionality
         document.getElementById('search-btn').addEventListener('click', () => {
             this.performSearch();
         });
 
-        document.getElementById('search-input').addEventListener('keypress', (e) => {
+        const searchInput = document.getElementById('search-input');
+
+        searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.performSearch();
             }
+        });
+
+        // Smart search with suggestions
+        searchInput.addEventListener('input', (e) => {
+            this.handleSearchInput(e.target.value);
+        });
+
+        searchInput.addEventListener('focus', () => {
+            this.showSearchSuggestions();
+        });
+
+        // Click outside to hide suggestions
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                this.hideSearchSuggestions();
+            }
+        });
+
+        // Bible Navigation button
+        document.getElementById('bible-nav-btn').addEventListener('click', () => {
+            this.showBibleNavModal();
         });
 
         // Bible controls
@@ -348,6 +371,15 @@ class ThompsonChainBible {
         const query = document.getElementById('search-input').value.trim();
         if (!query) return;
 
+        // Hide suggestions
+        this.hideSearchSuggestions();
+
+        // Check if it's a Bible reference (e.g., "Genesis 1:27", "John 3 16", "Romans 8:28")
+        const referenceMatch = this.parseReference(query);
+        if (referenceMatch) {
+            return this.navigateToReference(referenceMatch);
+        }
+
         // Show loading
         const searchResults = document.getElementById('search-results');
         searchResults.innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
@@ -373,6 +405,469 @@ class ThompsonChainBible {
                 </div>
             `;
         }
+    }
+
+    parseReference(input) {
+        // Remove extra spaces and normalize
+        const normalized = input.trim().replace(/\s+/g, ' ');
+
+        // Pattern for various reference formats:
+        // "Genesis 1:27", "Gen 1:27", "Genesis 1 27", "1 Kings 2:3", "2 Corinthians 5:17"
+        const patterns = [
+            // Full book name with colon: "Genesis 1:27"
+            /^(\d?\s*[a-zA-Z]+(?:\s+[a-zA-Z]+)*)\s+(\d+):(\d+)$/i,
+            // Full book name with space: "Genesis 1 27"
+            /^(\d?\s*[a-zA-Z]+(?:\s+[a-zA-Z]+)*)\s+(\d+)\s+(\d+)$/i,
+            // Chapter only: "Genesis 1"
+            /^(\d?\s*[a-zA-Z]+(?:\s+[a-zA-Z]+)*)\s+(\d+)$/i
+        ];
+
+        for (const pattern of patterns) {
+            const match = normalized.match(pattern);
+            if (match) {
+                const bookName = match[1].trim();
+                const chapter = parseInt(match[2]);
+                const verse = match[3] ? parseInt(match[3]) : null;
+
+                // Find matching book
+                const matchedBook = this.findBookMatch(bookName);
+                if (matchedBook) {
+                    return {
+                        book: matchedBook,
+                        chapter: chapter,
+                        verse: verse
+                    };
+                }
+            }
+        }
+
+        return null;
+    }
+
+    findBookMatch(input) {
+        const inputLower = input.toLowerCase().replace(/\s+/g, '');
+
+        // Book abbreviations mapping
+        const abbreviations = {
+            'gen': 'Genesis', 'genesis': 'Genesis',
+            'ex': 'Exodus', 'exo': 'Exodus', 'exodus': 'Exodus',
+            'lev': 'Leviticus', 'leviticus': 'Leviticus',
+            'num': 'Numbers', 'numbers': 'Numbers',
+            'deut': 'Deuteronomy', 'deu': 'Deuteronomy', 'deuteronomy': 'Deuteronomy',
+            'josh': 'Joshua', 'jos': 'Joshua', 'joshua': 'Joshua',
+            'judg': 'Judges', 'jdg': 'Judges', 'judges': 'Judges',
+            'ruth': 'Ruth',
+            '1sam': '1 Samuel', '1samuel': '1 Samuel', 'isamuel': '1 Samuel',
+            '2sam': '2 Samuel', '2samuel': '2 Samuel', 'iisamuel': '2 Samuel',
+            '1kings': '1 Kings', '1ki': '1 Kings', '1kgs': '1 Kings', 'ikings': '1 Kings',
+            '2kings': '2 Kings', '2ki': '2 Kings', '2kgs': '2 Kings', 'iikings': '2 Kings',
+            '1chron': '1 Chronicles', '1chr': '1 Chronicles', '1chronicles': '1 Chronicles',
+            '2chron': '2 Chronicles', '2chr': '2 Chronicles', '2chronicles': '2 Chronicles',
+            'ezra': 'Ezra',
+            'neh': 'Nehemiah', 'nehemiah': 'Nehemiah',
+            'esth': 'Esther', 'esther': 'Esther',
+            'job': 'Job',
+            'ps': 'Psalms', 'psa': 'Psalms', 'psalm': 'Psalms', 'psalms': 'Psalms',
+            'prov': 'Proverbs', 'pro': 'Proverbs', 'proverbs': 'Proverbs',
+            'eccl': 'Ecclesiastes', 'ecc': 'Ecclesiastes', 'ecclesiastes': 'Ecclesiastes',
+            'song': 'Song of Solomon', 'sos': 'Song of Solomon', 'songofsolomon': 'Song of Solomon',
+            'isa': 'Isaiah', 'isaiah': 'Isaiah',
+            'jer': 'Jeremiah', 'jeremiah': 'Jeremiah',
+            'lam': 'Lamentations', 'lamentations': 'Lamentations',
+            'ezek': 'Ezekiel', 'eze': 'Ezekiel', 'ezekiel': 'Ezekiel',
+            'dan': 'Daniel', 'daniel': 'Daniel',
+            'hos': 'Hosea', 'hosea': 'Hosea',
+            'joel': 'Joel',
+            'amos': 'Amos',
+            'obad': 'Obadiah', 'obadiah': 'Obadiah',
+            'jonah': 'Jonah',
+            'mic': 'Micah', 'micah': 'Micah',
+            'nah': 'Nahum', 'nahum': 'Nahum',
+            'hab': 'Habakkuk', 'habakkuk': 'Habakkuk',
+            'zeph': 'Zephaniah', 'zep': 'Zephaniah', 'zephaniah': 'Zephaniah',
+            'hag': 'Haggai', 'haggai': 'Haggai',
+            'zech': 'Zechariah', 'zec': 'Zechariah', 'zechariah': 'Zechariah',
+            'mal': 'Malachi', 'malachi': 'Malachi',
+            'matt': 'Matthew', 'mat': 'Matthew', 'matthew': 'Matthew',
+            'mark': 'Mark', 'mk': 'Mark', 'mar': 'Mark',
+            'luke': 'Luke', 'luk': 'Luke', 'lk': 'Luke',
+            'john': 'John', 'jn': 'John', 'joh': 'John',
+            'acts': 'Acts', 'act': 'Acts',
+            'rom': 'Romans', 'romans': 'Romans',
+            '1cor': '1 Corinthians', '1corinthians': '1 Corinthians', 'icorinthians': '1 Corinthians',
+            '2cor': '2 Corinthians', '2corinthians': '2 Corinthians', 'iicorinthians': '2 Corinthians',
+            'gal': 'Galatians', 'galatians': 'Galatians',
+            'eph': 'Ephesians', 'ephesians': 'Ephesians',
+            'phil': 'Philippians', 'php': 'Philippians', 'philippians': 'Philippians',
+            'col': 'Colossians', 'colossians': 'Colossians',
+            '1thess': '1 Thessalonians', '1th': '1 Thessalonians', '1thessalonians': '1 Thessalonians',
+            '2thess': '2 Thessalonians', '2th': '2 Thessalonians', '2thessalonians': '2 Thessalonians',
+            '1tim': '1 Timothy', '1ti': '1 Timothy', '1timothy': '1 Timothy',
+            '2tim': '2 Timothy', '2ti': '2 Timothy', '2timothy': '2 Timothy',
+            'titus': 'Titus', 'tit': 'Titus',
+            'philem': 'Philemon', 'phm': 'Philemon', 'philemon': 'Philemon',
+            'heb': 'Hebrews', 'hebrews': 'Hebrews',
+            'james': 'James', 'jas': 'James', 'jam': 'James',
+            '1pet': '1 Peter', '1pe': '1 Peter', '1peter': '1 Peter', 'ipeter': '1 Peter',
+            '2pet': '2 Peter', '2pe': '2 Peter', '2peter': '2 Peter', 'iipeter': '2 Peter',
+            '1john': '1 John', '1jn': '1 John', '1jo': '1 John', 'ijohn': '1 John',
+            '2john': '2 John', '2jn': '2 John', '2jo': '2 John', 'iijohn': '2 John',
+            '3john': '3 John', '3jn': '3 John', '3jo': '3 John', 'iiijohn': '3 John',
+            'jude': 'Jude', 'jud': 'Jude',
+            'rev': 'Revelation', 'revelation': 'Revelation', 'revelations': 'Revelation'
+        };
+
+        // Direct match
+        if (abbreviations[inputLower]) {
+            return abbreviations[inputLower];
+        }
+
+        // Partial match for full names
+        for (const book of this.bibleBooks) {
+            if (book.toLowerCase().replace(/\s+/g, '').includes(inputLower) ||
+                inputLower.includes(book.toLowerCase().replace(/\s+/g, ''))) {
+                return book;
+            }
+        }
+
+        return null;
+    }
+
+    async navigateToReference(reference) {
+        console.log('Navigating to reference:', reference);
+
+        // Close search modal if open
+        this.closeModal();
+
+        // Switch to Bible view
+        this.showView('bible');
+
+        // Set the book and chapter
+        document.getElementById('book-select').value = reference.book;
+        this.selectBook(reference.book);
+        document.getElementById('chapter-select').value = reference.chapter;
+
+        try {
+            // Load the chapter
+            await this.loadChapter();
+
+            // If specific verse requested, highlight it
+            if (reference.verse) {
+                setTimeout(() => {
+                    const verseElement = document.querySelector(`[data-verse="${reference.verse}"]`);
+                    if (verseElement) {
+                        verseElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        verseElement.style.backgroundColor = '#fff3cd';
+                        verseElement.style.border = '2px solid #ffc107';
+                        verseElement.style.borderRadius = '4px';
+                        setTimeout(() => {
+                            verseElement.style.backgroundColor = '';
+                            verseElement.style.border = '';
+                            verseElement.style.borderRadius = '';
+                        }, 3000);
+                    }
+                }, 500);
+            }
+
+            // Clear search input
+            document.getElementById('search-input').value = '';
+
+        } catch (error) {
+            console.error('Error navigating to reference:', error);
+            alert(`Could not navigate to ${reference.book} ${reference.chapter}${reference.verse ? ':' + reference.verse : ''}`);
+        }
+    }
+
+    handleSearchInput(value) {
+        const trimmed = value.trim();
+
+        if (trimmed.length === 0) {
+            this.hideSearchSuggestions();
+            return;
+        }
+
+        // Check if it looks like a reference
+        const referenceMatch = this.parseReference(trimmed);
+        if (referenceMatch) {
+            this.showReferenceSuggestion(referenceMatch, trimmed);
+            return;
+        }
+
+        // Show book suggestions
+        this.showBookSuggestions(trimmed);
+    }
+
+    showReferenceSuggestion(reference, originalInput) {
+        const suggestions = this.getOrCreateSuggestions();
+        const referenceText = `${reference.book} ${reference.chapter}${reference.verse ? ':' + reference.verse : ''}`;
+
+        suggestions.innerHTML = `
+            <div class="search-suggestion-header">📖 Bible Reference</div>
+            <div class="search-suggestion reference-suggestion" data-type="reference" data-reference='${JSON.stringify(reference)}'>
+                <div class="suggestion-icon">📍</div>
+                <div class="suggestion-content">
+                    <div class="suggestion-title">${referenceText}</div>
+                    <div class="suggestion-subtitle">Go to ${reference.verse ? 'verse' : 'chapter'}</div>
+                </div>
+            </div>
+        `;
+
+        this.addSuggestionClickHandlers();
+        suggestions.style.display = 'block';
+    }
+
+    showBookSuggestions(input) {
+        const inputLower = input.toLowerCase();
+        const matchingBooks = this.bibleBooks.filter(book =>
+            book.toLowerCase().includes(inputLower)
+        ).slice(0, 8);
+
+        if (matchingBooks.length === 0) {
+            this.hideSearchSuggestions();
+            return;
+        }
+
+        const suggestions = this.getOrCreateSuggestions();
+        let html = '<div class="search-suggestion-header">📚 Bible Books</div>';
+
+        matchingBooks.forEach(book => {
+            html += `
+                <div class="search-suggestion book-suggestion" data-type="book" data-book="${book}">
+                    <div class="suggestion-icon">📖</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">${book}</div>
+                        <div class="suggestion-subtitle">Browse chapters</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        suggestions.innerHTML = html;
+        this.addSuggestionClickHandlers();
+        suggestions.style.display = 'block';
+    }
+
+    showSearchSuggestions() {
+        const input = document.getElementById('search-input').value.trim();
+        if (input) {
+            this.handleSearchInput(input);
+        } else {
+            // Show popular searches or recent searches
+            this.showPopularSuggestions();
+        }
+    }
+
+    showPopularSuggestions() {
+        const suggestions = this.getOrCreateSuggestions();
+        const popularSearches = [
+            { type: 'reference', text: 'John 3:16', icon: '❤️' },
+            { type: 'reference', text: 'Psalm 23', icon: '🙏' },
+            { type: 'reference', text: 'Romans 8:28', icon: '✨' },
+            { type: 'search', text: 'love', icon: '💕' },
+            { type: 'search', text: 'faith', icon: '🙌' },
+            { type: 'search', text: 'hope', icon: '🌟' },
+            { type: 'reference', text: 'Genesis 1:1', icon: '🌍' },
+            { type: 'reference', text: 'Matthew 5:3', icon: '⛰️' }
+        ];
+
+        let html = '<div class="search-suggestion-header">💡 Popular Searches</div>';
+
+        popularSearches.forEach(item => {
+            html += `
+                <div class="search-suggestion popular-suggestion" data-type="${item.type}" data-text="${item.text}">
+                    <div class="suggestion-icon">${item.icon}</div>
+                    <div class="suggestion-content">
+                        <div class="suggestion-title">${item.text}</div>
+                        <div class="suggestion-subtitle">${item.type === 'reference' ? 'Bible Reference' : 'Search Term'}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        suggestions.innerHTML = html;
+        this.addSuggestionClickHandlers();
+        suggestions.style.display = 'block';
+    }
+
+    getOrCreateSuggestions() {
+        let suggestions = document.getElementById('search-suggestions');
+        if (!suggestions) {
+            suggestions = document.createElement('div');
+            suggestions.id = 'search-suggestions';
+            suggestions.className = 'search-suggestions';
+            document.querySelector('.search-container').appendChild(suggestions);
+        }
+        return suggestions;
+    }
+
+    addSuggestionClickHandlers() {
+        document.querySelectorAll('.search-suggestion').forEach(suggestion => {
+            suggestion.addEventListener('click', (e) => {
+                const type = e.currentTarget.dataset.type;
+
+                if (type === 'reference') {
+                    const referenceData = e.currentTarget.dataset.reference;
+                    if (referenceData) {
+                        const reference = JSON.parse(referenceData);
+                        this.navigateToReference(reference);
+                    } else {
+                        // Handle popular reference suggestions
+                        const text = e.currentTarget.dataset.text;
+                        document.getElementById('search-input').value = text;
+                        this.performSearch();
+                    }
+                } else if (type === 'book') {
+                    const book = e.currentTarget.dataset.book;
+                    this.navigateToBook(book);
+                } else if (type === 'search') {
+                    const text = e.currentTarget.dataset.text;
+                    document.getElementById('search-input').value = text;
+                    this.performSearch();
+                }
+            });
+        });
+    }
+
+    navigateToBook(book) {
+        this.hideSearchSuggestions();
+        this.showView('bible');
+        document.getElementById('book-select').value = book;
+        this.selectBook(book);
+        document.getElementById('chapter-select').value = '1';
+        this.loadChapter();
+        document.getElementById('search-input').value = '';
+    }
+
+    hideSearchSuggestions() {
+        const suggestions = document.getElementById('search-suggestions');
+        if (suggestions) {
+            suggestions.style.display = 'none';
+        }
+    }
+
+    showBibleNavModal() {
+        this.populateBibleNavBooks();
+        document.getElementById('bible-nav-modal').classList.add('show');
+
+        // Add tab switching functionality
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                // Tab functionality can be expanded later
+            });
+        });
+    }
+
+    closeBibleNavModal() {
+        document.getElementById('bible-nav-modal').classList.remove('show');
+    }
+
+    populateBibleNavBooks() {
+        const oldTestamentBooks = [
+            { name: 'Genesis', abbr: 'GEN' },
+            { name: 'Exodus', abbr: 'EX' },
+            { name: 'Leviticus', abbr: 'LEV' },
+            { name: 'Numbers', abbr: 'NUM' },
+            { name: 'Deuteronomy', abbr: 'DEU' },
+            { name: 'Joshua', abbr: 'JOS' },
+            { name: 'Judges', abbr: 'JDG' },
+            { name: 'Ruth', abbr: 'RTH' },
+            { name: '1 Samuel', abbr: '1SA' },
+            { name: '2 Samuel', abbr: '2SA' },
+            { name: '1 Kings', abbr: '1KI' },
+            { name: '2 Kings', abbr: '2KI' },
+            { name: '1 Chronicles', abbr: '1CH' },
+            { name: '2 Chronicles', abbr: '2CH' },
+            { name: 'Ezra', abbr: 'EZR' },
+            { name: 'Nehemiah', abbr: 'NEH' },
+            { name: 'Esther', abbr: 'EST' },
+            { name: 'Job', abbr: 'JOB' },
+            { name: 'Psalms', abbr: 'PSA' },
+            { name: 'Proverbs', abbr: 'PRV' },
+            { name: 'Ecclesiastes', abbr: 'ECC' },
+            { name: 'Song of Solomon', abbr: 'SOS' },
+            { name: 'Isaiah', abbr: 'ISA' },
+            { name: 'Jeremiah', abbr: 'JER' },
+            { name: 'Lamentations', abbr: 'LAM' },
+            { name: 'Ezekiel', abbr: 'EZE' },
+            { name: 'Daniel', abbr: 'DAN' },
+            { name: 'Hosea', abbr: 'HOS' },
+            { name: 'Joel', abbr: 'JOE' },
+            { name: 'Amos', abbr: 'AMO' },
+            { name: 'Obadiah', abbr: 'OBD' },
+            { name: 'Jonah', abbr: 'JON' },
+            { name: 'Micah', abbr: 'MIC' },
+            { name: 'Nahum', abbr: 'NAH' },
+            { name: 'Habakkuk', abbr: 'HAB' },
+            { name: 'Zephaniah', abbr: 'ZEP' },
+            { name: 'Haggai', abbr: 'HAG' },
+            { name: 'Zechariah', abbr: 'ZEC' },
+            { name: 'Malachi', abbr: 'MAL' }
+        ];
+
+        const newTestamentBooks = [
+            { name: 'Matthew', abbr: 'MAT' },
+            { name: 'Mark', abbr: 'MRK' },
+            { name: 'Luke', abbr: 'LUK' },
+            { name: 'John', abbr: 'JN' },
+            { name: 'Acts', abbr: 'ACT' },
+            { name: 'Romans', abbr: 'ROM' },
+            { name: '1 Corinthians', abbr: '1CO' },
+            { name: '2 Corinthians', abbr: '2CO' },
+            { name: 'Galatians', abbr: 'GAL' },
+            { name: 'Ephesians', abbr: 'EPH' },
+            { name: 'Philippians', abbr: 'PHP' },
+            { name: 'Colossians', abbr: 'COL' },
+            { name: '1 Thessalonians', abbr: '1TH' },
+            { name: '2 Thessalonians', abbr: '2TH' },
+            { name: '1 Timothy', abbr: '1TI' },
+            { name: '2 Timothy', abbr: '2TI' },
+            { name: 'Titus', abbr: 'TIT' },
+            { name: 'Philemon', abbr: 'PHM' },
+            { name: 'Hebrews', abbr: 'HEB' },
+            { name: 'James', abbr: 'JAM' },
+            { name: '1 Peter', abbr: '1PE' },
+            { name: '2 Peter', abbr: '2PE' },
+            { name: '1 John', abbr: '1JN' },
+            { name: '2 John', abbr: '2JN' },
+            { name: '3 John', abbr: '3JN' },
+            { name: 'Jude', abbr: 'JUD' },
+            { name: 'Revelation', abbr: 'REV' }
+        ];
+
+        // Populate Old Testament
+        const otContainer = document.getElementById('old-testament-books');
+        otContainer.innerHTML = oldTestamentBooks.map(book => `
+            <button class="book-button" data-book="${book.name}" title="${book.name}">
+                ${book.abbr}
+            </button>
+        `).join('');
+
+        // Populate New Testament
+        const ntContainer = document.getElementById('new-testament-books');
+        ntContainer.innerHTML = newTestamentBooks.map(book => `
+            <button class="book-button" data-book="${book.name}" title="${book.name}">
+                ${book.abbr}
+            </button>
+        `).join('');
+
+        // Add click handlers
+        document.querySelectorAll('.book-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const bookName = e.target.dataset.book;
+                this.navigateToBookFromModal(bookName);
+            });
+        });
+    }
+
+    navigateToBookFromModal(book) {
+        this.closeBibleNavModal();
+        this.showView('bible');
+        document.getElementById('book-select').value = book;
+        this.selectBook(book);
+        document.getElementById('chapter-select').value = '1';
+        this.loadChapter();
     }
 
     displaySearchResults(results, query, source) {

@@ -20,9 +20,12 @@
             </div>
             <div class="header-right">
                 <div class="search-container">
-                    <input type="text" id="search-input" placeholder="Search Bible..." class="search-input">
+                    <input type="text" id="search-input" placeholder="Search Bible or enter reference (e.g., John 3:16)..." class="search-input">
                     <button id="search-btn" class="btn-icon" title="Search">
                         <i class="fas fa-search"></i>
+                    </button>
+                    <button id="bible-nav-btn" class="btn-icon" title="Bible Navigation">
+                        <i class="fas fa-book-open"></i>
                     </button>
                 </div>
             </div>
@@ -166,6 +169,41 @@
                 </div>
                 <div class="modal-body">
                     <div id="search-results"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bible Navigation Modal -->
+        <div id="bible-nav-modal" class="modal">
+            <div class="modal-content bible-nav-modal">
+                <div class="modal-header">
+                    <h2><i class="fas fa-book-open"></i> Bible Navigation</h2>
+                    <button class="modal-close" onclick="app.closeBibleNavModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="bible-nav-tabs">
+                        <button class="nav-tab active" data-tab="book">📖 BOOK</button>
+                        <button class="nav-tab" data-tab="chapter">📄 CHAPTER</button>
+                        <button class="nav-tab" data-tab="verse">📝 VERSE</button>
+                    </div>
+
+                    <div class="bible-nav-content">
+                        <!-- Old Testament Books -->
+                        <div class="testament-section">
+                            <h3 class="testament-title">Old Testament</h3>
+                            <div class="books-grid" id="old-testament-books">
+                                <!-- Books will be populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- New Testament Books -->
+                        <div class="testament-section">
+                            <h3 class="testament-title">New Testament</h3>
+                            <div class="books-grid" id="new-testament-books">
+                                <!-- Books will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

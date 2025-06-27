@@ -161,6 +161,148 @@
     margin-bottom: 15px;
 }
 
+/* Bible Navigation Modal */
+.bible-nav-modal {
+    max-width: 800px;
+    max-height: 90vh;
+}
+
+.bible-nav-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.nav-tab {
+    padding: 10px 20px;
+    border: 2px solid #e9ecef;
+    background: #f8f9fa;
+    color: #6c757d;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+    font-size: 14px;
+}
+
+.nav-tab.active {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.nav-tab:hover:not(.active) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+}
+
+.bible-nav-content {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.testament-section {
+    margin-bottom: 30px;
+}
+
+.testament-title {
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #3498db;
+    display: inline-block;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.book-button {
+    padding: 12px 8px;
+    border: 2px solid #e9ecef;
+    background: #f8f9fa;
+    color: #495057;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: center;
+    transition: all 0.2s;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.book-button:hover {
+    background: #3498db;
+    color: white;
+    border-color: #3498db;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.book-button:active {
+    transform: translateY(0);
+}
+
+/* Old Testament books styling */
+#old-testament-books .book-button {
+    border-color: #e74c3c;
+    color: #c0392b;
+}
+
+#old-testament-books .book-button:hover {
+    background: #e74c3c;
+    border-color: #e74c3c;
+    color: white;
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+/* New Testament books styling */
+#new-testament-books .book-button {
+    border-color: #3498db;
+    color: #2980b9;
+}
+
+#new-testament-books .book-button:hover {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .bible-nav-modal {
+        max-width: 95vw;
+        margin: 10px;
+    }
+
+    .books-grid {
+        grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+        gap: 6px;
+    }
+
+    .book-button {
+        padding: 8px 4px;
+        font-size: 10px;
+        min-height: 40px;
+    }
+
+    .nav-tab {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+}
+
 /* Chain Reference Display */
 .chain-display {
     background: white;
