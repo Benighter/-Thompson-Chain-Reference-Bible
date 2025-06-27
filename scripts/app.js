@@ -65,9 +65,28 @@ class ThompsonChainBible {
             });
         });
 
-        // Enhanced search functionality
-        document.getElementById('search-btn').addEventListener('click', () => {
+        // Enhanced search functionality with robust event handling
+        const searchBtn = document.getElementById('search-btn');
+
+        // Remove any existing listeners and add fresh one
+        searchBtn.replaceWith(searchBtn.cloneNode(true));
+        const newSearchBtn = document.getElementById('search-btn');
+
+        newSearchBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Search button clicked'); // Debug log
             this.performSearch();
+        });
+
+        // Also add event delegation for search button
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'search-btn') {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Search button clicked via delegation'); // Debug log
+                this.performSearch();
+            }
         });
 
         const searchInput = document.getElementById('search-input');
@@ -404,6 +423,24 @@ class ThompsonChainBible {
                     <p class="error-details">${error.message}</p>
                 </div>
             `;
+        }
+    }
+
+    // Function to reinitialize search button (call this if search button stops working)
+    reinitializeSearchButton() {
+        const searchBtn = document.getElementById('search-btn');
+        if (searchBtn) {
+            // Remove existing listeners
+            searchBtn.replaceWith(searchBtn.cloneNode(true));
+            const newSearchBtn = document.getElementById('search-btn');
+
+            // Add fresh event listener
+            newSearchBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Search button reinitialized and clicked');
+                this.performSearch();
+            });
         }
     }
 
@@ -760,12 +797,31 @@ class ThompsonChainBible {
         // Initialize tab states
         this.updateTabStates();
 
-        // Add tab switching functionality
+        // Ensure book tab is always clickable
+        this.ensureBookTabClickable();
+
+        // Add tab switching functionality with event delegation
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
                 const tabType = e.target.dataset.tab;
+                console.log('Tab clicked:', tabType); // Debug log
                 this.switchNavTab(tabType);
             });
+        });
+
+        // Also add event delegation for tabs to ensure they always work
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.classList.contains('nav-tab')) {
+                const tabType = e.target.dataset.tab;
+                console.log('Tab clicked via delegation:', tabType); // Debug log
+
+                // Only allow book tab to be clicked freely, others need prerequisites
+                if (tabType === 'book' ||
+                    (tabType === 'chapter' && this.navState.selectedBook) ||
+                    (tabType === 'verse' && this.navState.selectedBook && this.navState.selectedChapter)) {
+                    this.switchNavTab(tabType);
+                }
+            }
         });
     }
 
@@ -798,18 +854,29 @@ class ThompsonChainBible {
     }
 
     updateTabStates() {
+        const bookTab = document.querySelector('[data-tab="book"]');
         const chapterTab = document.querySelector('[data-tab="chapter"]');
         const verseTab = document.querySelector('[data-tab="verse"]');
+
+        // Book tab should always be enabled and clickable
+        if (bookTab) {
+            bookTab.classList.remove('disabled');
+            bookTab.style.opacity = '1';
+            bookTab.style.cursor = 'pointer';
+            bookTab.style.pointerEvents = 'auto';
+        }
 
         // Enable/disable chapter tab based on book selection
         if (this.navState.selectedBook) {
             chapterTab.classList.remove('disabled');
             chapterTab.style.opacity = '1';
             chapterTab.style.cursor = 'pointer';
+            chapterTab.style.pointerEvents = 'auto';
         } else {
             chapterTab.classList.add('disabled');
             chapterTab.style.opacity = '0.6';
             chapterTab.style.cursor = 'not-allowed';
+            chapterTab.style.pointerEvents = 'none';
         }
 
         // Enable/disable verse tab based on chapter selection
@@ -817,10 +884,12 @@ class ThompsonChainBible {
             verseTab.classList.remove('disabled');
             verseTab.style.opacity = '1';
             verseTab.style.cursor = 'pointer';
+            verseTab.style.pointerEvents = 'auto';
         } else {
             verseTab.classList.add('disabled');
             verseTab.style.opacity = '0.6';
             verseTab.style.cursor = 'not-allowed';
+            verseTab.style.pointerEvents = 'none';
         }
     }
 
@@ -1082,6 +1151,25 @@ class ThompsonChainBible {
 
             // Add breadcrumb navigation handlers
             this.addBreadcrumbHandlers();
+        }
+    }
+
+    ensureBookTabClickable() {
+        const bookTab = document.querySelector('[data-tab="book"]');
+        if (bookTab) {
+            // Make sure book tab is always clickable
+            bookTab.classList.remove('disabled');
+            bookTab.style.opacity = '1';
+            bookTab.style.cursor = 'pointer';
+            bookTab.style.pointerEvents = 'auto';
+
+            // Add a specific click handler for the book tab
+            bookTab.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Book tab clicked directly');
+                this.switchNavTab('book');
+            });
         }
     }
 
