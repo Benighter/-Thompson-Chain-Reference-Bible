@@ -1,0 +1,14 @@
+{
+  "name": "thompson-chain-bible",
+  "productName": "Thompson Chain Reference Bible",
+  "version": "1.0.0",
+  "description": "A modern Thompson Chain Reference Bible study app with topical chains and cross-references",
+  "author": "Your Name",
+  "license": "MIT",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8080",
+    "dev": "python -m http.server 8080",
+    "serve": "python -m http.server 8080"
+  }
+}

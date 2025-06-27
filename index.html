@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thompson Chain Reference Bible</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <button id="sidebar-toggle" class="btn-icon" title="Toggle Sidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="app-title">Thompson Chain Reference Bible</h1>
+            </div>
+            <div class="header-right">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search Bible..." class="search-input">
+                    <button id="search-btn" class="btn-icon" title="Search">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside id="sidebar" class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Navigation</h3>
+                    <div class="nav-buttons">
+                        <button class="nav-btn active" data-view="bible">
+                            <i class="fas fa-book"></i> Bible
+                        </button>
+                        <button class="nav-btn" data-view="chains">
+                            <i class="fas fa-link"></i> Chain References
+                        </button>
+                        <button class="nav-btn" data-view="topics">
+                            <i class="fas fa-tags"></i> Topical Study
+                        </button>
+                        <button class="nav-btn" data-view="notes">
+                            <i class="fas fa-sticky-note"></i> Notes
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Bible Books</h3>
+                    <div class="book-categories">
+                        <div class="book-category">
+                            <h4>Old Testament</h4>
+                            <div class="book-list" id="ot-books">
+                                <!-- Old Testament books will be populated here -->
+                            </div>
+                        </div>
+                        <div class="book-category">
+                            <h4>New Testament</h4>
+                            <div class="book-list" id="nt-books">
+                                <!-- New Testament books will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Chain Topics</h3>
+                    <div class="chain-topics" id="chain-topics">
+                        <div class="topic-item" data-topic="love">Love</div>
+                        <div class="topic-item" data-topic="faith">Faith</div>
+                        <div class="topic-item" data-topic="hope">Hope</div>
+                        <div class="topic-item" data-topic="salvation">Salvation</div>
+                        <div class="topic-item" data-topic="prayer">Prayer</div>
+                        <div class="topic-item" data-topic="wisdom">Wisdom</div>
+                        <div class="topic-item" data-topic="peace">Peace</div>
+                        <div class="topic-item" data-topic="joy">Joy</div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Bible View -->
+                <div id="bible-view" class="content-view active">
+                    <div class="bible-controls">
+                        <select id="book-select" class="form-select">
+                            <option value="">Select Book...</option>
+                        </select>
+                        <select id="chapter-select" class="form-select">
+                            <option value="">Chapter...</option>
+                        </select>
+                        <button id="load-chapter" class="btn-primary">Load Chapter</button>
+                    </div>
+                    
+                    <div class="bible-text" id="bible-text">
+                        <div class="welcome-message">
+                            <h2>Welcome to Thompson Chain Reference Bible</h2>
+                            <p>Select a book and chapter to begin your study, or use the search function to find specific verses.</p>
+                            <div class="feature-highlights">
+                                <div class="feature">
+                                    <i class="fas fa-link"></i>
+                                    <h3>Chain References</h3>
+                                    <p>Follow topical chains through Scripture with interconnected verse references.</p>
+                                </div>
+                                <div class="feature">
+                                    <i class="fas fa-search"></i>
+                                    <h3>Advanced Search</h3>
+                                    <p>Search through the entire Bible with powerful search capabilities.</p>
+                                </div>
+                                <div class="feature">
+                                    <i class="fas fa-sticky-note"></i>
+                                    <h3>Study Notes</h3>
+                                    <p>Add your own notes and annotations to verses for deeper study.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chain References View -->
+                <div id="chains-view" class="content-view">
+                    <h2>Chain References</h2>
+                    <div class="chain-content">
+                        <p>Select a topic from the sidebar to explore chain references.</p>
+                        <div id="chain-results"></div>
+                    </div>
+                </div>
+
+                <!-- Topical Study View -->
+                <div id="topics-view" class="content-view">
+                    <h2>Topical Study</h2>
+                    <div class="topic-content">
+                        <p>Explore biblical topics with comprehensive verse collections.</p>
+                        <div id="topic-results"></div>
+                    </div>
+                </div>
+
+                <!-- Notes View -->
+                <div id="notes-view" class="content-view">
+                    <h2>Study Notes</h2>
+                    <div class="notes-content">
+                        <div class="notes-toolbar">
+                            <button id="add-note" class="btn-primary">
+                                <i class="fas fa-plus"></i> Add Note
+                            </button>
+                        </div>
+                        <div id="notes-list">
+                            <p>Your study notes will appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Search Results Modal -->
+        <div id="search-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Search Results</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="search-results"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="scripts/app.js"></script>
+    <script src="scripts/bible.js"></script>
+    <script src="scripts/chains.js"></script>
+    <script src="scripts/search.js"></script>
+</body>
+</html>
