@@ -746,17 +746,82 @@ class ThompsonChainBible {
     }
 
     showBibleNavModal() {
+        // Initialize navigation state
+        this.navState = {
+            currentTab: 'book',
+            selectedBook: null,
+            selectedChapter: null,
+            selectedVerse: null
+        };
+
         this.populateBibleNavBooks();
         document.getElementById('bible-nav-modal').classList.add('show');
+
+        // Initialize tab states
+        this.updateTabStates();
 
         // Add tab switching functionality
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                e.target.classList.add('active');
-                // Tab functionality can be expanded later
+                const tabType = e.target.dataset.tab;
+                this.switchNavTab(tabType);
             });
         });
+    }
+
+    switchNavTab(tabType) {
+        // Check if tab is accessible based on current state
+        if (tabType === 'chapter' && !this.navState.selectedBook) {
+            // Can't go to chapter without selecting book first
+            return;
+        }
+        if (tabType === 'verse' && (!this.navState.selectedBook || !this.navState.selectedChapter)) {
+            // Can't go to verse without selecting book and chapter first
+            return;
+        }
+
+        // Update active tab
+        document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelector(`[data-tab="${tabType}"]`).classList.add('active');
+
+        this.navState.currentTab = tabType;
+        this.updateTabStates();
+
+        // Show appropriate content based on tab and state
+        if (tabType === 'book') {
+            this.populateBibleNavBooks();
+        } else if (tabType === 'chapter') {
+            this.populateBibleNavChapters(this.navState.selectedBook);
+        } else if (tabType === 'verse') {
+            this.populateBibleNavVerses(this.navState.selectedBook, this.navState.selectedChapter);
+        }
+    }
+
+    updateTabStates() {
+        const chapterTab = document.querySelector('[data-tab="chapter"]');
+        const verseTab = document.querySelector('[data-tab="verse"]');
+
+        // Enable/disable chapter tab based on book selection
+        if (this.navState.selectedBook) {
+            chapterTab.classList.remove('disabled');
+            chapterTab.style.opacity = '1';
+            chapterTab.style.cursor = 'pointer';
+        } else {
+            chapterTab.classList.add('disabled');
+            chapterTab.style.opacity = '0.6';
+            chapterTab.style.cursor = 'not-allowed';
+        }
+
+        // Enable/disable verse tab based on chapter selection
+        if (this.navState.selectedBook && this.navState.selectedChapter) {
+            verseTab.classList.remove('disabled');
+            verseTab.style.opacity = '1';
+            verseTab.style.cursor = 'pointer';
+        } else {
+            verseTab.classList.add('disabled');
+            verseTab.style.opacity = '0.6';
+            verseTab.style.cursor = 'not-allowed';
+        }
     }
 
     closeBibleNavModal() {
@@ -856,18 +921,206 @@ class ThompsonChainBible {
         document.querySelectorAll('.book-button').forEach(button => {
             button.addEventListener('click', (e) => {
                 const bookName = e.target.dataset.book;
-                this.navigateToBookFromModal(bookName);
+                this.selectBookInModal(bookName);
             });
         });
     }
 
-    navigateToBookFromModal(book) {
+    selectBookInModal(book) {
+        this.navState.selectedBook = book;
+        this.navState.selectedChapter = null;
+        this.navState.selectedVerse = null;
+
+        // Update tab states and switch to chapters
+        this.updateTabStates();
+        this.switchNavTab('chapter');
+    }
+
+    populateBibleNavChapters(book) {
+        const content = document.querySelector('.bible-nav-content');
+
+        // Get chapter count for the book
+        const chapterCount = this.getChapterCount(book);
+
+        let chaptersHtml = `
+            <div class="nav-breadcrumb">
+                <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                <span class="breadcrumb-separator">›</span>
+                <span class="breadcrumb-current">📖 ${book}</span>
+            </div>
+            <div class="nav-section">
+                <h3 class="nav-section-title">Select Chapter in ${book}</h3>
+                <div class="chapters-grid">
+        `;
+
+        for (let i = 1; i <= chapterCount; i++) {
+            chaptersHtml += `
+                <button class="chapter-button" data-chapter="${i}">
+                    ${i}
+                </button>
+            `;
+        }
+
+        chaptersHtml += `
+                </div>
+            </div>
+        `;
+
+        content.innerHTML = chaptersHtml;
+
+        // Add click handlers for chapters
+        document.querySelectorAll('.chapter-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const chapter = parseInt(e.target.dataset.chapter);
+                this.selectChapterInModal(chapter);
+            });
+        });
+    }
+
+    selectChapterInModal(chapter) {
+        this.navState.selectedChapter = chapter;
+        this.navState.selectedVerse = null;
+
+        // Update tab states and switch to verses
+        this.updateTabStates();
+        this.switchNavTab('verse');
+    }
+
+    async populateBibleNavVerses(book, chapter) {
+        const content = document.querySelector('.bible-nav-content');
+
+        // Show loading
+        content.innerHTML = `
+            <div class="nav-breadcrumb">
+                <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                <span class="breadcrumb-separator">›</span>
+                <button class="breadcrumb-item" onclick="app.switchNavTab('chapter')">📖 ${book}</button>
+                <span class="breadcrumb-separator">›</span>
+                <span class="breadcrumb-current">📝 Chapter ${chapter}</span>
+            </div>
+            <div class="loading-spinner"><div class="spinner"></div></div>
+        `;
+
+        try {
+            // Get verses for the chapter
+            const response = await fetch(`http://localhost:3001/api/bible/${encodeURIComponent(book)}/${chapter}`);
+            const data = await response.json();
+
+            if (data.success && data.data.verses) {
+                const verses = data.data.verses;
+
+                let versesHtml = `
+                    <div class="nav-breadcrumb">
+                        <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                        <span class="breadcrumb-separator">›</span>
+                        <button class="breadcrumb-item" onclick="app.switchNavTab('chapter')">📖 ${book}</button>
+                        <span class="breadcrumb-separator">›</span>
+                        <span class="breadcrumb-current">📝 Chapter ${chapter}</span>
+                    </div>
+                    <div class="nav-section">
+                        <h3 class="nav-section-title">Select Verse in ${book} ${chapter}</h3>
+                        <div class="verses-grid">
+                `;
+
+                verses.forEach(verse => {
+                    versesHtml += `
+                        <button class="verse-button" data-verse="${verse.verse}" title="${verse.text.substring(0, 100)}...">
+                            ${verse.verse}
+                        </button>
+                    `;
+                });
+
+                versesHtml += `
+                        </div>
+                        <div class="nav-actions">
+                            <button class="nav-action-btn" onclick="app.navigateToChapterFromModal()">
+                                📖 Go to Chapter ${chapter}
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                content.innerHTML = versesHtml;
+
+                // Add click handlers for verses
+                document.querySelectorAll('.verse-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const verse = parseInt(e.target.dataset.verse);
+                        this.selectVerseInModal(verse);
+                    });
+                });
+
+            } else {
+                throw new Error('Could not load verses');
+            }
+
+        } catch (error) {
+            console.error('Error loading verses:', error);
+            content.innerHTML = `
+                <div class="nav-breadcrumb">
+                    <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                    <span class="breadcrumb-separator">›</span>
+                    <button class="breadcrumb-item" onclick="app.switchNavTab('chapter')">📖 ${book}</button>
+                    <span class="breadcrumb-separator">›</span>
+                    <span class="breadcrumb-current">📝 Chapter ${chapter}</span>
+                </div>
+                <div class="error-message">
+                    <h3>Error Loading Verses</h3>
+                    <p>Could not load verses for ${book} ${chapter}</p>
+                    <button class="btn-primary" onclick="app.switchNavTab('chapter')">← Back to Chapters</button>
+                </div>
+            `;
+        }
+    }
+
+    selectVerseInModal(verse) {
+        this.navState.selectedVerse = verse;
+        this.navigateToVerseFromModal();
+    }
+
+    navigateToChapterFromModal() {
         this.closeBibleNavModal();
-        this.showView('bible');
-        document.getElementById('book-select').value = book;
-        this.selectBook(book);
-        document.getElementById('chapter-select').value = '1';
-        this.loadChapter();
+        this.navigateToReference({
+            book: this.navState.selectedBook,
+            chapter: this.navState.selectedChapter,
+            verse: null
+        });
+    }
+
+    navigateToVerseFromModal() {
+        this.closeBibleNavModal();
+        this.navigateToReference({
+            book: this.navState.selectedBook,
+            chapter: this.navState.selectedChapter,
+            verse: this.navState.selectedVerse
+        });
+    }
+
+    updateNavBreadcrumb() {
+        // This will be called when breadcrumb needs updating
+        // Implementation depends on current state
+    }
+
+    getChapterCount(book) {
+        // Chapter counts for each book of the Bible
+        const chapterCounts = {
+            'Genesis': 50, 'Exodus': 40, 'Leviticus': 27, 'Numbers': 36, 'Deuteronomy': 34,
+            'Joshua': 24, 'Judges': 21, 'Ruth': 4, '1 Samuel': 31, '2 Samuel': 24,
+            '1 Kings': 22, '2 Kings': 25, '1 Chronicles': 29, '2 Chronicles': 36, 'Ezra': 10,
+            'Nehemiah': 13, 'Esther': 10, 'Job': 42, 'Psalms': 150, 'Proverbs': 31,
+            'Ecclesiastes': 12, 'Song of Solomon': 8, 'Isaiah': 66, 'Jeremiah': 52, 'Lamentations': 5,
+            'Ezekiel': 48, 'Daniel': 12, 'Hosea': 14, 'Joel': 3, 'Amos': 9,
+            'Obadiah': 1, 'Jonah': 4, 'Micah': 7, 'Nahum': 3, 'Habakkuk': 3,
+            'Zephaniah': 3, 'Haggai': 2, 'Zechariah': 14, 'Malachi': 4,
+            'Matthew': 28, 'Mark': 16, 'Luke': 24, 'John': 21, 'Acts': 28,
+            'Romans': 16, '1 Corinthians': 16, '2 Corinthians': 13, 'Galatians': 6, 'Ephesians': 6,
+            'Philippians': 4, 'Colossians': 4, '1 Thessalonians': 5, '2 Thessalonians': 3, '1 Timothy': 6,
+            '2 Timothy': 4, 'Titus': 3, 'Philemon': 1, 'Hebrews': 13, 'James': 5,
+            '1 Peter': 5, '2 Peter': 3, '1 John': 5, '2 John': 1, '3 John': 1,
+            'Jude': 1, 'Revelation': 22
+        };
+
+        return chapterCounts[book] || 1;
     }
 
     displaySearchResults(results, query, source) {
