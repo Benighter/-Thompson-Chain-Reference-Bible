@@ -924,6 +924,9 @@ class ThompsonChainBible {
                 this.selectBookInModal(bookName);
             });
         });
+
+        // Add breadcrumb navigation handlers (in case there are any)
+        this.addBreadcrumbHandlers();
     }
 
     selectBookInModal(book) {
@@ -944,7 +947,7 @@ class ThompsonChainBible {
 
         let chaptersHtml = `
             <div class="nav-breadcrumb">
-                <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                <button class="breadcrumb-item" data-nav-action="book">📚 Books</button>
                 <span class="breadcrumb-separator">›</span>
                 <span class="breadcrumb-current">📖 ${book}</span>
             </div>
@@ -975,6 +978,9 @@ class ThompsonChainBible {
                 this.selectChapterInModal(chapter);
             });
         });
+
+        // Add breadcrumb navigation handlers
+        this.addBreadcrumbHandlers();
     }
 
     selectChapterInModal(chapter) {
@@ -992,9 +998,9 @@ class ThompsonChainBible {
         // Show loading
         content.innerHTML = `
             <div class="nav-breadcrumb">
-                <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                <button class="breadcrumb-item" data-nav-action="book">📚 Books</button>
                 <span class="breadcrumb-separator">›</span>
-                <button class="breadcrumb-item" onclick="app.switchNavTab('chapter')">📖 ${book}</button>
+                <button class="breadcrumb-item" data-nav-action="chapter">📖 ${book}</button>
                 <span class="breadcrumb-separator">›</span>
                 <span class="breadcrumb-current">📝 Chapter ${chapter}</span>
             </div>
@@ -1002,18 +1008,18 @@ class ThompsonChainBible {
         `;
 
         try {
-            // Get verses for the chapter
-            const response = await fetch(`http://localhost:3001/api/bible/${encodeURIComponent(book)}/${chapter}`);
+            // Get verses for the chapter using the correct API endpoint
+            const response = await fetch(`http://localhost:3001/api/chapter/${encodeURIComponent(book)}/${chapter}`);
             const data = await response.json();
 
-            if (data.success && data.data.verses) {
+            if (data.success && data.data && data.data.verses) {
                 const verses = data.data.verses;
 
                 let versesHtml = `
                     <div class="nav-breadcrumb">
-                        <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                        <button class="breadcrumb-item" data-nav-action="book">📚 Books</button>
                         <span class="breadcrumb-separator">›</span>
-                        <button class="breadcrumb-item" onclick="app.switchNavTab('chapter')">📖 ${book}</button>
+                        <button class="breadcrumb-item" data-nav-action="chapter">📖 ${book}</button>
                         <span class="breadcrumb-separator">›</span>
                         <span class="breadcrumb-current">📝 Chapter ${chapter}</span>
                     </div>
@@ -1050,6 +1056,9 @@ class ThompsonChainBible {
                     });
                 });
 
+                // Add breadcrumb navigation handlers
+                this.addBreadcrumbHandlers();
+
             } else {
                 throw new Error('Could not load verses');
             }
@@ -1058,19 +1067,43 @@ class ThompsonChainBible {
             console.error('Error loading verses:', error);
             content.innerHTML = `
                 <div class="nav-breadcrumb">
-                    <button class="breadcrumb-item" onclick="app.switchNavTab('book')">📚 Books</button>
+                    <button class="breadcrumb-item" data-nav-action="book">📚 Books</button>
                     <span class="breadcrumb-separator">›</span>
-                    <button class="breadcrumb-item" onclick="app.switchNavTab('chapter')">📖 ${book}</button>
+                    <button class="breadcrumb-item" data-nav-action="chapter">📖 ${book}</button>
                     <span class="breadcrumb-separator">›</span>
                     <span class="breadcrumb-current">📝 Chapter ${chapter}</span>
                 </div>
                 <div class="error-message">
                     <h3>Error Loading Verses</h3>
                     <p>Could not load verses for ${book} ${chapter}</p>
-                    <button class="btn-primary" onclick="app.switchNavTab('chapter')">← Back to Chapters</button>
+                    <button class="btn-primary" data-nav-action="chapter">← Back to Chapters</button>
                 </div>
             `;
+
+            // Add breadcrumb navigation handlers
+            this.addBreadcrumbHandlers();
         }
+    }
+
+    addBreadcrumbHandlers() {
+        // Add click handlers for breadcrumb navigation
+        document.querySelectorAll('[data-nav-action]').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const action = e.target.dataset.navAction;
+                if (action === 'book') {
+                    // Reset state and go to book selection
+                    this.navState.selectedBook = null;
+                    this.navState.selectedChapter = null;
+                    this.navState.selectedVerse = null;
+                    this.switchNavTab('book');
+                } else if (action === 'chapter') {
+                    // Keep book, reset chapter and verse, go to chapter selection
+                    this.navState.selectedChapter = null;
+                    this.navState.selectedVerse = null;
+                    this.switchNavTab('chapter');
+                }
+            });
+        });
     }
 
     selectVerseInModal(verse) {
