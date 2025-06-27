@@ -87,6 +87,37 @@ class ThompsonChainBible {
                 console.log('Search button clicked via delegation'); // Debug log
                 this.performSearch();
             }
+
+            // Event delegation for breadcrumb navigation
+            if (e.target && e.target.dataset && e.target.dataset.navAction) {
+                e.preventDefault();
+                e.stopPropagation();
+                const action = e.target.dataset.navAction;
+                console.log('Breadcrumb clicked via delegation:', action); // Debug log
+
+                if (action === 'book') {
+                    // Reset state and go to book selection
+                    this.navState.selectedBook = null;
+                    this.navState.selectedChapter = null;
+                    this.navState.selectedVerse = null;
+                    this.navState.currentTab = 'book';
+
+                    // Force switch to book tab and populate books
+                    this.switchNavTab('book');
+
+                    // Ensure books are populated
+                    setTimeout(() => {
+                        this.populateBibleNavBooks();
+                    }, 100);
+
+                } else if (action === 'chapter') {
+                    // Keep book, reset chapter and verse, go to chapter selection
+                    this.navState.selectedChapter = null;
+                    this.navState.selectedVerse = null;
+                    this.navState.currentTab = 'chapter';
+                    this.switchNavTab('chapter');
+                }
+            }
         });
 
         const searchInput = document.getElementById('search-input');
@@ -845,11 +876,17 @@ class ThompsonChainBible {
 
         // Show appropriate content based on tab and state
         if (tabType === 'book') {
+            // Always populate books when switching to book tab
+            console.log('Switching to book tab, populating books'); // Debug log
             this.populateBibleNavBooks();
         } else if (tabType === 'chapter') {
-            this.populateBibleNavChapters(this.navState.selectedBook);
+            if (this.navState.selectedBook) {
+                this.populateBibleNavChapters(this.navState.selectedBook);
+            }
         } else if (tabType === 'verse') {
-            this.populateBibleNavVerses(this.navState.selectedBook, this.navState.selectedChapter);
+            if (this.navState.selectedBook && this.navState.selectedChapter) {
+                this.populateBibleNavVerses(this.navState.selectedBook, this.navState.selectedChapter);
+            }
         }
     }
 
@@ -1177,17 +1214,31 @@ class ThompsonChainBible {
         // Add click handlers for breadcrumb navigation
         document.querySelectorAll('[data-nav-action]').forEach(button => {
             button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const action = e.target.dataset.navAction;
+                console.log('Breadcrumb clicked:', action); // Debug log
+
                 if (action === 'book') {
                     // Reset state and go to book selection
                     this.navState.selectedBook = null;
                     this.navState.selectedChapter = null;
                     this.navState.selectedVerse = null;
+                    this.navState.currentTab = 'book';
+
+                    // Force switch to book tab and populate books
                     this.switchNavTab('book');
+
+                    // Ensure books are populated
+                    setTimeout(() => {
+                        this.populateBibleNavBooks();
+                    }, 100);
+
                 } else if (action === 'chapter') {
                     // Keep book, reset chapter and verse, go to chapter selection
                     this.navState.selectedChapter = null;
                     this.navState.selectedVerse = null;
+                    this.navState.currentTab = 'chapter';
                     this.switchNavTab('chapter');
                 }
             });
